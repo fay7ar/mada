@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدى دليفري - التطبيق الرئيسي</title>
+    
+    <!-- أيقونات التطبيق -->
+    <link rel="icon" href="https://img.icons8.com/color/96/000000/delivery--v1.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/000000/delivery--v1.png">
+    <meta name="theme-color" content="#2563eb">
+    
+    <!-- بيانات التطبيق عند التثبيت -->
+    <meta name="application-name" content="مدى دليفري">
+    <meta name="apple-mobile-web-app-title" content="مدى دليفري">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            background-color: #f8fafc; 
+            padding-bottom: 90px; 
+            overflow-x: hidden;
+        }
+        
+        /* شاشة التحميل */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+        
+        #splashScreen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .splash-logo {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+        }
+        
+        .splash-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .splash-subtext {
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            max-width: 300px;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-top: 30px;
+        }
+        
+        .nav-item.active { 
+            color: #2563eb; 
+            border-top: 3px solid #2563eb; 
+        }
+        
+        .hidden-section { 
+            display: none !important; 
+        }
+        
+        .badge-status { 
+            font-size: 0.7rem; 
+            padding: 2px 10px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+        }
+        
+        .status-pending { 
+            background-color: #fef3c7; 
+            color: #92400e; 
+        }
+        
+        .status-approved { 
+            background-color: #dcfce7; 
+            color: #166534; 
+        }
+        
+        .status-rejected { 
+            background-color: #fee2e2; 
+            color: #991b1b; 
+        }
+        
+        .status-project { 
+            background-color: #dbeafe; 
+            color: #1e40af; 
+        }
+        
+        .status-captain { 
+            background-color: #f0f9ff; 
+            color: #0369a1; 
+        }
+        
+        .status-active { 
+            background-color: #22c55e; 
+            color: white; 
+        }
+        
+        .status-inactive { 
+            background-color: #ef4444; 
+            color: white; 
+        }
+        
+        .msg-me { 
+            align-self: flex-start; 
+            background-color: #2563eb; 
+            color: white; 
+            border-radius: 15px 15px 0 15px; 
+        }
+        
+        .msg-them { 
+            align-self: flex-end; 
+            background-color: #e2e8f0; 
+            color: #1e293b; 
+            border-radius: 15px 15px 15px 0; 
+        }
+        
+        .order-card { 
+            border-right: 4px solid; 
+            transition: all 0.3s; 
+        }
+        
+        .order-pending { 
+            border-color: #f59e0b; 
+        }
+        
+        .order-assigned { 
+            border-color: #3b82f6; 
+        }
+        
+        .order-completed { 
+            border-color: #10b981; 
+        }
+        
+        .status-toggle { 
+            transition: all 0.3s; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+        }
+        
+        .status-toggle.active { 
+            background-color: #22c55e; 
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .status-toggle.inactive { 
+            background-color: #ef4444; 
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        /* تأثيرات الأنيميشن */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* تخصيص شريط التمرير */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        
+        /* زر التثبيت */
+        .install-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            cursor: pointer;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        .install-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        }
+        
+        .install-btn.hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- شاشة التحميل -->
+    <div id="splashScreen">
+        <svg class="splash-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- أيقونة الشاحنة مع تصميم حديث -->
+            <circle cx="50" cy="50" r="48" fill="white" opacity="0.1"/>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="white" stroke-width="2" opacity="0.3"/>
+            
+            <!-- جسم الشاحنة -->
+            <rect x="25" y="40" width="40" height="20" rx="5" fill="white"/>
+            
+            <!-- كابينة الشاحنة -->
+            <rect x="60" y="35" width="15" height="25" rx="5" fill="white"/>
+            
+            <!-- نوافذ -->
+            <rect x="62" y="37" width="11" height="8" rx="2" fill="#1e40af" opacity="0.7"/>
+            
+            <!-- العجلات -->
+            <circle cx="35" cy="65" r="6" fill="#1e40af"/>
+            <circle cx="35" cy="65" r="3" fill="white"/>
+            
+            <circle cx="65" cy="65" r="6" fill="#1e40af"/>
+            <circle cx="65" cy="65" r="3" fill="white"/>
+            
+            <!-- علامة الزخرفة -->
+            <path d="M30 30 Q50 20 70 30" stroke="white" stroke-width="2" fill="none"/>
+            
+            <!-- تأثيرات إضافية -->
+            <circle cx="50" cy="50" r="2" fill="white" opacity="0.5">
+                <animate attributeName="r" values="2;8;2" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.5;0.1;0.5" dur="2s" repeatCount="indefinite"/>
+            </circle>
+        </svg>
+        
+        <h1 class="splash-text">مدى دليفري</h1>
+        <p class="splash-subtext">منصة ربط المشاريع مع كباتن التوصيل</p>
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- زر تثبيت التطبيق -->
+    <button id="installButton" class="install-btn hidden">
+        <i class="fa fa-download"></i>
+        تثبيت التطبيق
+    </button>
+
+    <!-- الهيدر الرئيسي -->
+    <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4 shadow-lg sticky top-0 z-50 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <i class="fa fa-truck-fast text-xl"></i>
+            </div>
+            <h1 id="pageTitle" class="text-xl font-bold">مدى دليفري</h1>
+        </div>
+        <div id="userBadgeHeader" class="badge-status"></div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <div class="container mx-auto p-4 max-w-2xl">
+        <!-- صفحة المصادقة -->
+        <section id="authPage" class="bg-white p-8 rounded-2xl shadow-xl mt-10">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-3xl">
+                    <i class="fa fa-truck-fast"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2 text-gray-800">مرحباً في مدى دليفري</h2>
+                <p class="text-gray-500">منصة ربط المشاريع مع كباتن التوصيل</p>
+            </div>
+            
+            <input type="text" id="userName" placeholder="الاسم الكامل" class="w-full p-4 border rounded-xl mb-4 outline-none focus:ring-2 ring-blue-500">
+            
+            <input type="tel" id="userPhone" placeholder="رقم الهاتف" class="w-full p-4 border rounded-xl mb-6 outline-none focus:ring-2 ring-blue-500">
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">نوع الحساب:</label>
+                <div class="flex gap-4">
+                    <button onclick="selectRole('project')" id="roleProject" class="flex-1 py-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2">
+                        <i class="fa fa-building text-xl"></i>
+                        <span>مشروع</span>
+                    </button>
+                    <button onclick="selectRole('captain')" id="roleCaptain" class="flex-1 py-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2">
+                        <i class="fa fa-user-tie text-xl"></i>
+                        <span>كابتن</span>
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
+                <i class="fa fa-sign-in-alt mr-2"></i> تسجيل الدخول
+            </button>
+
+            <p class="text-center text-gray-500 text-sm mt-6">
+                سيتم مراجعة طلبك من قبل الإدارة قبل التفعيل
+            </p>
+        </section>
+
+        <!-- الصفحة الرئيسية (تختلف حسب نوع المستخدم) -->
+        <section id="homePage" class="hidden-section">
+            <!-- واجهة المشروع -->
+            <div id="projectInterface" class="hidden-section">
+                <div class="bg-gradient-to-r from-blue-50 to-white p-6 rounded-2xl shadow-sm mb-6 border border-blue-100">
+                    <h3 class="font-bold mb-4 text-blue-800 flex items-center gap-2">
+                        <i class="fa fa-plus-circle"></i> طلب كابتن توصيل جديد
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">نقطة الاستلام</label>
+                            <input type="text" id="pickupLocation" placeholder="عنوان الاستلام" class="w-full p-3 border rounded-lg outline-none focus:ring-2 ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">نقطة التسليم</label>
+                            <input type="text" id="deliveryLocation" placeholder="عنوان التسليم" class="w-full p-3 border rounded-lg outline-none focus:ring-2 ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">تفاصيل الشحنة</label>
+                            <input type="text" id="shipmentDetails" placeholder="نوع الشحنة" class="w-full p-3 border rounded-lg outline-none focus:ring-2 ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">الوزن التقريبي</label>
+                            <input type="text" id="shipmentWeight" placeholder="بالكيلوغرام" class="w-full p-3 border rounded-lg outline-none focus:ring-2 ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">القيمة المقدرة</label>
+                            <input type="number" id="shipmentValue" placeholder="بالدينار" class="w-full p-3 border rounded-lg outline-none focus:ring-2 ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ملاحظات إضافية</label>
+                        <textarea id="orderNotes" placeholder="أي تفاصيل إضافية..." rows="2" class="w-full p-3 border rounded-lg outline-none focus:ring-2 ring-blue-500"></textarea>
+                    </div>
+                    
+                    <button onclick="submitOrder()" class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-bold hover:from-green-600 hover:to-green-700 transition-all shadow-md">
+                        <i class="fa fa-paper-plane mr-2"></i> إرسال الطلب
+                    </button>
+                </div>
+
+                <h3 class="font-bold mb-4 text-gray-700 flex items-center gap-2">
+                    <i class="fa fa-list-alt"></i> طلباتي السابقة
+                </h3>
+                <div id="projectOrders" class="space-y-4"></div>
+            </div>
+
+            <!-- واجهة الكابتن -->
+            <div id="captainInterface" class="hidden-section">
+                <!-- تحكم بحالة الكابتن -->
+                <div class="bg-gradient-to-r from-green-50 to-white p-6 rounded-2xl shadow-sm mb-6 border border-green-100">
+                    <h3 class="font-bold mb-4 text-green-800 flex items-center gap-2">
+                        <i class="fa fa-user-check"></i> حالتي الحالية
+                    </h3>
+                    
+                    <div class="flex gap-4 mb-6">
+                        <button onclick="setCaptainStatus('active')" id="statusActive" class="flex-1 status-toggle py-4 rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2">
+                            <i class="fa fa-check-circle text-2xl"></i>
+                            <span>نشط</span>
+                            <p class="text-xs mt-1">جاهز للعمل</p>
+                        </button>
+                        <button onclick="setCaptainStatus('inactive')" id="statusInactive" class="flex-1 status-toggle py-4 rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2">
+                            <i class="fa fa-times-circle text-2xl"></i>
+                            <span>خامل</span>
+                            <p class="text-xs mt-1">مشغول حالياً</p>
+                        </button>
+                    </div>
+                    
+                    <div id="currentStatusInfo" class="text-center p-3 rounded-lg bg-gray-50">
+                        <p class="text-sm text-gray-600">الحالة الحالية: <span id="currentStatusText" class="font-bold">غير محدد</span></p>
+                    </div>
+                </div>
+
+                <!-- طلبات التوصيل المتاحة -->
+                <h3 class="font-bold mb-4 text-gray-700 flex items-center gap-2">
+                    <i class="fa fa-clock"></i> طلبات التوصيل المتاحة
+                </h3>
+                <div id="availableOrders" class="space-y-4"></div>
+
+                <!-- طلباتي المقبولة -->
+                <h3 class="font-bold mb-4 mt-8 text-gray-700 flex items-center gap-2">
+                    <i class="fa fa-tasks"></i> طلباتي المكلف بها
+                </h3>
+                <div id="acceptedOrders" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- صفحة الرسائل (مركز الدعم) -->
+        <section id="supportPage" class="hidden-section">
+            <div class="bg-gradient-to-r from-purple-50 to-white p-6 rounded-2xl shadow-sm mb-6">
+                <h3 class="font-bold mb-4 text-purple-800 flex items-center gap-2">
+                    <i class="fa fa-headset"></i> مركز الدعم
+                </h3>
+                <p class="text-gray-600 mb-4 text-sm">
+                    يمكنك التواصل مع فريق الدعم لأي استفسار أو مشكلة تواجهك
+                </p>
+                
+                <div id="supportMessages" class="bg-white p-4 rounded-2xl h-96 overflow-y-auto mb-4 flex flex-col gap-2 shadow-inner border"></div>
+                
+                <div class="flex gap-2">
+                    <input type="text" id="supportInput" placeholder="اكتب رسالتك هنا..." class="flex-1 p-3 border rounded-xl outline-none focus:ring-2 ring-purple-500">
+                    <button onclick="sendSupportMessage()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all">
+                        <i class="fa fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- صفحة الملف الشخصي -->
+        <section id="profilePage" class="hidden-section">
+            <div class="bg-white p-8 rounded-3xl shadow-lg text-center border">
+                <div class="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-4xl shadow-inner">
+                    <i class="fa fa-user-circle"></i>
+                </div>
+                
+                <h2 class="text-2xl font-bold text-gray-800" id="profileName"></h2>
+                <div id="userBadgeProfile" class="badge-status inline-block my-3"></div>
+                <p id="profilePhone" class="text-gray-400 text-sm mb-6"></p>
+                
+                <div class="bg-gray-50 p-4 rounded-xl mb-6 text-right">
+                    <h4 class="font-bold text-gray-700 mb-2">معلومات الحساب</h4>
+                    <p class="text-sm text-gray-600" id="accountType"></p>
+                    <p class="text-sm text-gray-600" id="accountStatus"></p>
+                </div>
+                
+                <hr class="mb-6">
+                
+                <button onclick="logout()" class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-md">
+                    <i class="fa fa-sign-out-alt mr-2"></i> تسجيل الخروج
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- شريط التنقل السفلي -->
+    <nav id="bottomNav" class="hidden-section fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 z-50 shadow-[0_-4px_15px_rgba(0,0,0,0.1)]">
+        <button onclick="showPage('home')" id="navHome" class="nav-item flex flex-col items-center text-gray-400 pt-1">
+            <i class="fa fa-home text-xl"></i>
+            <span class="text-xs mt-1">الرئيسية</span>
+        </button>
+        
+        <button onclick="showPage('support')" id="navSupport" class="nav-item flex flex-col items-center text-gray-400 pt-1 relative">
+            <i class="fa fa-headset text-xl"></i>
+            <span class="text-xs mt-1">الدعم</span>
+            <span id="supportBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">!</span>
+        </button>
+        
+        <button onclick="showPage('profile')" id="navProfile" class="nav-item flex flex-col items-center text-gray-400 pt-1">
+            <i class="fa fa-user text-xl"></i>
+            <span class="text-xs mt-1">حسابي</span>
+        </button>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDc6BCdVWQNwk7FyBGrbWc3CoE-WSLR5Jg",
+            authDomain: "mahata-ly.firebaseapp.com",
+            databaseURL: "https://mahata-ly-default-rtdb.firebaseio.com",
+            projectId: "mahata-ly",
+            storageBucket: "mahata-ly.firebasestorage.app",
+            messagingSenderId: "843447933780",
+            appId: "1:843447933780:web:7bc4497b649dc8c0d806c1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let currentUser = JSON.parse(localStorage.getItem('mada_delivery_user'));
+        let selectedRole = '';
+        let unreadSupportMessages = 0;
+        let deferredPrompt = null;
+
+        // --- إخفاء شاشة التحميل ---
+        function hideSplashScreen() {
+            const splashScreen = document.getElementById('splashScreen');
+            setTimeout(() => {
+                splashScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 500);
+            }, 1500); // عرض الشاشة لمدة 1.5 ثانية
+        }
+
+        // --- التحكم في زر التثبيت ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // منع المتصفح من عرض تثبيت افتراضي
+            e.preventDefault();
+            // تخزين الحدث ليتم استخدامه لاحقاً
+            deferredPrompt = e;
+            // إظهار زر التثبيت المخصص
+            const installButton = document.getElementById('installButton');
+            installButton.classList.remove('hidden');
+            
+            // إضافة حدث النقر على زر التثبيت
+            installButton.addEventListener('click', () => {
+                // إخفاء الزر
+                installButton.classList.add('hidden');
+                
+                // عرض نافذة التثبيت
+                deferredPrompt.prompt();
+                
+                // الانتظار لمعرفة ما إذا قام المستخدم بالتثبيت
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('تم قبول التثبيت');
+                    } else {
+                        console.log('تم رفض التثبيت');
+                    }
+                    deferredPrompt = null;
+                });
+            });
+        });
+
+        // --- اكتشاف ما إذا كان التطبيق مثبتاً ---
+        window.addEventListener('appinstalled', () => {
+            console.log('تم تثبيت التطبيق بنجاح');
+            const installButton = document.getElementById('installButton');
+            installButton.classList.add('hidden');
+        });
+
+        // --- التحقق مما إذا كان التطبيق يعمل في وضع PWA ---
+        function isRunningAsPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone === true;
+        }
+
+        // --- إخفاء زر التثبيت إذا كان التطبيق مثبتاً ---
+        if (isRunningAsPWA()) {
+            document.getElementById('installButton').classList.add('hidden');
+        }
+
+        // --- وظائف الهوية ---
+        window.selectRole = (role) => {
+            selectedRole = role;
+            const projectBtn = document.getElementById('roleProject');
+            const captainBtn = document.getElementById('roleCaptain');
+            
+            if (role === 'project') {
+                projectBtn.className = 'flex-1 py-4 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-600 font-bold flex flex-col items-center gap-2';
+                captainBtn.className = 'flex-1 py-4 rounded-xl border-2 text-gray-400 font-bold flex flex-col items-center gap-2';
+            } else {
+                projectBtn.className = 'flex-1 py-4 rounded-xl border-2 text-gray-400 font-bold flex flex-col items-center gap-2';
+                captainBtn.className = 'flex-1 py-4 rounded-xl border-2 border-green-500 bg-green-50 text-green-600 font-bold flex flex-col items-center gap-2';
+            }
+        };
+
+        window.login = () => {
+            const name = document.getElementById('userName').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            
+            if (!name || !phone || !selectedRole) {
+                alert("الرجاء إدخال كافة البيانات وتحديد نوع الحساب");
+                return;
+            }
+
+            const userData = {
+                id: phone,
+                name: name,
+                phone: phone,
+                role: selectedRole,
+                status: 'pending', // كل الحسابات تبدأ بانتظار الموافقة
+                registrationDate: Date.now(),
+                captainStatus: selectedRole === 'captain' ? 'inactive' : null
+            };
+
+            set(ref(db, 'users/' + phone), userData).then(() => {
+                localStorage.setItem('mada_delivery_user', JSON.stringify(userData));
+                location.reload();
+            });
+        };
+
+        window.logout = () => {
+            localStorage.removeItem('mada_delivery_user');
+            location.reload();
+        };
+
+        // --- التنقل بين الصفحات ---
+        window.showPage = (page) => {
+            ['homePage', 'supportPage', 'profilePage'].forEach(s => {
+                document.getElementById(s)?.classList.add('hidden-section');
+            });
+            
+            document.getElementById(page + 'Page').classList.remove('hidden-section');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const navBtn = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
+            if (navBtn) navBtn.classList.add('active');
+            
+            if (page === 'home') {
+                loadHomeData();
+            }
+            if (page === 'support') {
+                loadSupportChat();
+                unreadSupportMessages = 0;
+                updateSupportBadge();
+            }
+        };
+
+        function updateStatusUI(userData) {
+            const headerBadge = document.getElementById('userBadgeHeader');
+            const profileBadge = document.getElementById('userBadgeProfile');
+            let text = '', classes = '';
+            
+            if (userData.role === 'project') {
+                text = 'مشروع';
+                classes = 'status-project';
+            } else if (userData.role === 'captain') {
+                text = 'كابتن';
+                classes = 'status-captain';
+            }
+            
+            if (userData.status === 'pending') {
+                text += ' (قيد المراجعة)';
+                classes = 'status-pending';
+            } else if (userData.status === 'rejected') {
+                text += ' (مرفوض)';
+                classes = 'status-rejected';
+            }
+            
+            headerBadge.innerText = text;
+            headerBadge.className = 'badge-status ' + classes;
+            profileBadge.innerText = text;
+            profileBadge.className = 'badge-status ' + classes;
+            
+            document.getElementById('accountType').innerText = `نوع الحساب: ${userData.role === 'project' ? 'مشروع' : 'كابتن'}`;
+            document.getElementById('accountStatus').innerText = `حالة الحساب: ${getStatusText(userData.status)}`;
+            
+            if (userData.role === 'captain') {
+                updateCaptainStatusUI(userData.captainStatus);
+            }
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'قيد المراجعة',
+                'approved': 'مفعل',
+                'rejected': 'مرفوض'
+            };
+            return statusMap[status] || status;
+        }
+
+        // --- إدارة طلبات التوصيل (للمشاريع) ---
+        window.submitOrder = () => {
+            if (currentUser.status !== 'approved') {
+                alert('حسابك غير مفعل بعد. يرجى الانتظار حتى تتم الموافقة عليه.');
+                return;
+            }
+
+            const pickup = document.getElementById('pickupLocation').value;
+            const delivery = document.getElementById('deliveryLocation').value;
+            const details = document.getElementById('shipmentDetails').value;
+            const weight = document.getElementById('shipmentWeight').value;
+            const value = document.getElementById('shipmentValue').value;
+            const notes = document.getElementById('orderNotes').value;
+
+            if (!pickup || !delivery) {
+                alert('الرجاء إدخال عناوين الاستلام والتسليم');
+                return;
+            }
+
+            const orderData = {
+                projectId: currentUser.id,
+                projectName: currentUser.name,
+                pickupLocation: pickup,
+                deliveryLocation: delivery,
+                shipmentDetails: details,
+                shipmentWeight: weight,
+                shipmentValue: value,
+                notes: notes,
+                status: 'pending',
+                createdAt: Date.now(),
+                captainId: null,
+                captainName: null
+            };
+
+            push(ref(db, 'orders'), orderData).then(() => {
+                alert('تم إرسال الطلب بنجاح! سيتم تعيين كابتن قريباً.');
+                clearOrderForm();
+                loadProjectOrders();
+            });
+        };
+
+        function clearOrderForm() {
+            document.getElementById('pickupLocation').value = '';
+            document.getElementById('deliveryLocation').value = '';
+            document.getElementById('shipmentDetails').value = '';
+            document.getElementById('shipmentWeight').value = '';
+            document.getElementById('shipmentValue').value = '';
+            document.getElementById('orderNotes').value = '';
+        }
+
+        function loadProjectOrders() {
+            const ordersContainer = document.getElementById('projectOrders');
+            ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-4">جاري تحميل الطلبات...</p>';
+
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const orders = snapshot.val();
+                ordersContainer.innerHTML = '';
+                
+                let hasOrders = false;
+                
+                for (let orderId in orders) {
+                    const order = orders[orderId];
+                    
+                    if (order.projectId === currentUser.id) {
+                        hasOrders = true;
+                        const statusClass = getOrderStatusClass(order.status);
+                        const statusText = getOrderStatusText(order.status);
+                        
+                        ordersContainer.innerHTML += `
+                            <div class="order-card ${statusClass} bg-white p-4 rounded-xl shadow-sm">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <span class="font-bold text-gray-800">${order.pickupLocation}</span>
+                                        <i class="fa fa-arrow-left text-xs mx-2 text-blue-400"></i>
+                                        <span class="font-bold text-gray-800">${order.deliveryLocation}</span>
+                                    </div>
+                                    <span class="badge-status ${statusClass.replace('order-', 'status-')}">${statusText}</span>
+                                </div>
+                                
+                                <div class="text-sm text-gray-600 mb-2">
+                                    <p><i class="fa fa-box mr-1"></i> ${order.shipmentDetails || 'بدون تفاصيل'}</p>
+                                    <p><i class="fa fa-weight-hanging mr-1"></i> الوزن: ${order.shipmentWeight || 'غير محدد'} كجم</p>
+                                </div>
+                                
+                                ${order.captainName ? 
+                                    `<div class="mt-3 pt-3 border-t">
+                                        <p class="text-sm text-gray-700"><i class="fa fa-user-tie mr-1"></i> الكابتن: ${order.captainName}</p>
+                                    </div>` 
+                                    : ''}
+                                
+                                ${order.notes ? 
+                                    `<div class="mt-2">
+                                        <p class="text-xs text-gray-500"><i class="fa fa-sticky-note mr-1"></i> ${order.notes}</p>
+                                    </div>` 
+                                    : ''}
+                            </div>`;
+                    }
+                }
+                
+                if (!hasOrders) {
+                    ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-8">لا توجد طلبات سابقة</p>';
+                }
+            });
+        }
+
+        function getOrderStatusClass(status) {
+            const classMap = {
+                'pending': 'order-pending',
+                'assigned': 'order-assigned',
+                'completed': 'order-completed',
+                'cancelled': 'order-cancelled'
+            };
+            return classMap[status] || 'order-pending';
+        }
+
+        function getOrderStatusText(status) {
+            const textMap = {
+                'pending': 'قيد الانتظار',
+                'assigned': 'تم التعيين',
+                'completed': 'مكتمل',
+                'cancelled': 'ملغى'
+            };
+            return textMap[status] || status;
+        }
+
+        // --- إدارة حالة الكابتن ---
+        window.setCaptainStatus = (status) => {
+            if (currentUser.status !== 'approved') {
+                alert('حسابك غير مفعل بعد. يرجى الانتظار حتى تتم الموافقة عليه.');
+                return;
+            }
+
+            update(ref(db, 'users/' + currentUser.id), {
+                captainStatus: status
+            }).then(() => {
+                updateCaptainStatusUI(status);
+            });
+        };
+
+        function updateCaptainStatusUI(status) {
+            const activeBtn = document.getElementById('statusActive');
+            const inactiveBtn = document.getElementById('statusInactive');
+            const statusText = document.getElementById('currentStatusText');
+            
+            activeBtn.className = 'flex-1 status-toggle py-4 rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2';
+            inactiveBtn.className = 'flex-1 status-toggle py-4 rounded-xl font-bold text-lg flex flex-col items-center justify-center gap-2';
+            
+            if (status === 'active') {
+                activeBtn.className += ' active';
+                statusText.textContent = 'نشط (جاهز للعمل)';
+                statusText.className = 'font-bold text-green-600';
+            } else {
+                inactiveBtn.className += ' inactive';
+                statusText.textContent = 'خامل (مشغول)';
+                statusText.className = 'font-bold text-red-600';
+            }
+        }
+
+        function loadAvailableOrders() {
+            const ordersContainer = document.getElementById('availableOrders');
+            ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-4">جاري تحميل الطلبات المتاحة...</p>';
+
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const orders = snapshot.val();
+                ordersContainer.innerHTML = '';
+                
+                let hasAvailableOrders = false;
+                
+                for (let orderId in orders) {
+                    const order = orders[orderId];
+                    
+                    // عرض فقط الطلبات المعلقة والكابتن نشط
+                    if (order.status === 'pending' && currentUser.captainStatus === 'active') {
+                        hasAvailableOrders = true;
+                        
+                        ordersContainer.innerHTML += `
+                            <div class="order-card order-pending bg-white p-4 rounded-xl shadow-sm">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <span class="font-bold text-gray-800">${order.pickupLocation}</span>
+                                        <i class="fa fa-arrow-left text-xs mx-2 text-blue-400"></i>
+                                        <span class="font-bold text-gray-800">${order.deliveryLocation}</span>
+                                    </div>
+                                    <span class="badge-status status-pending">قيد الانتظار</span>
+                                </div>
+                                
+                                <div class="text-sm text-gray-600 mb-2">
+                                    <p><i class="fa fa-building mr-1"></i> المشروع: ${order.projectName}</p>
+                                    <p><i class="fa fa-box mr-1"></i> ${order.shipmentDetails || 'بدون تفاصيل'}</p>
+                                </div>
+                                
+                                <div class="mt-3 pt-3 border-t flex justify-end">
+                                    <button onclick="acceptOrder('${orderId}')" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:from-green-600 hover:to-green-700 transition-all">
+                                        <i class="fa fa-check mr-1"></i> قبول الطلب
+                                    </button>
+                                </div>
+                            </div>`;
+                    }
+                }
+                
+                if (!hasAvailableOrders) {
+                    ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-8">لا توجد طلبات متاحة حالياً</p>';
+                }
+            });
+        }
+
+        window.acceptOrder = (orderId) => {
+            update(ref(db, `orders/${orderId}`), {
+                status: 'assigned',
+                captainId: currentUser.id,
+                captainName: currentUser.name,
+                assignedAt: Date.now()
+            }).then(() => {
+                alert('تم قبول الطلب بنجاح!');
+                loadAvailableOrders();
+                loadAcceptedOrders();
+            });
+        };
+
+        function loadAcceptedOrders() {
+            const ordersContainer = document.getElementById('acceptedOrders');
+            ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-4">جاري تحميل الطلبات المكلف بها...</p>';
+
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const orders = snapshot.val();
+                ordersContainer.innerHTML = '';
+                
+                let hasAcceptedOrders = false;
+                
+                for (let orderId in orders) {
+                    const order = orders[orderId];
+                    
+                    if (order.captainId === currentUser.id && order.status === 'assigned') {
+                        hasAcceptedOrders = true;
+                        
+                        ordersContainer.innerHTML += `
+                            <div class="order-card order-assigned bg-white p-4 rounded-xl shadow-sm">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <span class="font-bold text-gray-800">${order.pickupLocation}</span>
+                                        <i class="fa fa-arrow-left text-xs mx-2 text-blue-400"></i>
+                                        <span class="font-bold text-gray-800">${order.deliveryLocation}</span>
+                                    </div>
+                                    <span class="badge-status status-approved">مكلف به</span>
+                                </div>
+                                
+                                <div class="text-sm text-gray-600 mb-2">
+                                    <p><i class="fa fa-building mr-1"></i> المشروع: ${order.projectName}</p>
+                                    <p><i class="fa fa-phone mr-1"></i> الهاتف: ${order.projectId}</p>
+                                    <p><i class="fa fa-box mr-1"></i> ${order.shipmentDetails || 'بدون تفاصيل'}</p>
+                                </div>
+                                
+                                <div class="mt-3 pt-3 border-t flex justify-end gap-2">
+                                    <button onclick="completeOrder('${orderId}')" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-blue-700 transition-all">
+                                        <i class="fa fa-check-circle mr-1"></i> تم التسليم
+                                    </button>
+                                </div>
+                            </div>`;
+                    }
+                }
+                
+                if (!hasAcceptedOrders) {
+                    ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-8">لا توجد طلبات مكلف بها حالياً</p>';
+                }
+            });
+        }
+
+        window.completeOrder = (orderId) => {
+            if (confirm('هل أكدت تسليم الطلب بنجاح؟')) {
+                update(ref(db, `orders/${orderId}`), {
+                    status: 'completed',
+                    completedAt: Date.now()
+                }).then(() => {
+                    alert('تم تسجيل إتمام الطلب بنجاح!');
+                    loadAcceptedOrders();
+                });
+            }
+        };
+
+        // --- نظام محادثات الدعم ---
+        function loadSupportChat() {
+            const messagesContainer = document.getElementById('supportMessages');
+            messagesContainer.innerHTML = '<p class="text-center text-gray-400 py-8">جاري تحميل المحادثة...</p>';
+
+            const supportChatId = `support_${currentUser.id}`;
+            const chatRef = ref(db, `supportChats/${supportChatId}/messages`);
+
+            onValue(chatRef, (snapshot) => {
+                const messages = snapshot.val();
+                renderSupportMessages(messages);
+            });
+
+            update(ref(db, `supportChats/${supportChatId}/metadata`), {
+                userName: currentUser.name,
+                userPhone: currentUser.id,
+                userRole: currentUser.role,
+                lastUpdate: Date.now()
+            });
+        }
+
+        function renderSupportMessages(messages) {
+            const container = document.getElementById('supportMessages');
+            container.innerHTML = '';
+
+            if (!messages) {
+                container.innerHTML = '<p class="text-center text-gray-400 py-8">لا توجد رسائل بعد. ابدأ المحادثة الآن!</p>';
+                return;
+            }
+
+            // تحويل الرسائل إلى مصفوفة وترتيبها حسب الوقت
+            const messagesArray = [];
+            for (let id in messages) {
+                messagesArray.push({ id, ...messages[id] });
+            }
+            
+            messagesArray.sort((a, b) => a.timestamp - b.timestamp);
+
+            messagesArray.forEach(msg => {
+                const isMe = msg.senderId === currentUser.id;
+                const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+
+                container.innerHTML += `
+                    <div class="max-w-[85%] p-3 mb-2 ${isMe ? 'msg-me' : 'msg-them'}">
+                        <p class="text-sm mb-1">${msg.text}</p>
+                        <p class="text-xs opacity-70 text-right">${time}</p>
+                    </div>`;
+            });
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        window.sendSupportMessage = () => {
+            const text = document.getElementById('supportInput').value.trim();
+            if (!text) return;
+
+            const supportChatId = `support_${currentUser.id}`;
+            const messageData = {
+                senderId: currentUser.id,
+                senderName: currentUser.name,
+                text: text,
+                timestamp: Date.now(),
+                read: false
+            };
+
+            push(ref(db, `supportChats/${supportChatId}/messages`), messageData);
+            update(ref(db, `supportChats/${supportChatId}/metadata`), {
+                lastMessage: text,
+                lastUpdate: Date.now(),
+                lastSender: currentUser.id,
+                unread: true
+            });
+
+            document.getElementById('supportInput').value = '';
+        };
+
+        function checkUnreadSupportMessages() {
+            const supportChatId = `support_${currentUser.id}`;
+            onValue(ref(db, `supportChats/${supportChatId}/metadata`), (snapshot) => {
+                const metadata = snapshot.val();
+                if (metadata && metadata.lastSender !== currentUser.id && metadata.unread) {
+                    unreadSupportMessages = 1;
+                    updateSupportBadge();
+                }
+            });
+        }
+
+        function updateSupportBadge() {
+            const badge = document.getElementById('supportBadge');
+            if (unreadSupportMessages > 0) {
+                badge.classList.remove('hidden');
+                badge.textContent = unreadSupportMessages;
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // --- تشغيل التطبيق عند التحميل ---
+        function loadHomeData() {
+            if (currentUser.role === 'project') {
+                document.getElementById('projectInterface').classList.remove('hidden-section');
+                document.getElementById('captainInterface').classList.add('hidden-section');
+                loadProjectOrders();
+            } else if (currentUser.role === 'captain') {
+                document.getElementById('projectInterface').classList.add('hidden-section');
+                document.getElementById('captainInterface').classList.remove('hidden-section');
+                loadAvailableOrders();
+                loadAcceptedOrders();
+            }
+        }
+
+        // --- تهيئة التطبيق ---
+        function initApp() {
+            if (currentUser) {
+                document.getElementById('authPage').classList.add('hidden-section');
+                document.getElementById('bottomNav').classList.remove('hidden-section');
+                document.getElementById('profileName').innerText = currentUser.name;
+                document.getElementById('profilePhone').innerText = currentUser.phone;
+
+                onValue(ref(db, 'users/' + currentUser.id), (snapshot) => {
+                    const userData = snapshot.val();
+                    if (userData) {
+                        currentUser = userData;
+                        localStorage.setItem('mada_delivery_user', JSON.stringify(userData));
+                        updateStatusUI(userData);
+                        
+                        if (userData.status !== 'approved') {
+                            // إذا كان الحساب غير مفعل، إظهار رسالة
+                            document.getElementById('projectInterface').innerHTML = `
+                                <div class="bg-yellow-50 p-8 rounded-2xl border border-yellow-200 text-center">
+                                    <i class="fa fa-hourglass-half text-yellow-500 text-4xl mb-4"></i>
+                                    <p class="font-bold text-yellow-800 text-lg mb-2">حسابك قيد المراجعة</p>
+                                    <p class="text-yellow-600">سيتم تفعيل حسابك قريباً بعد مراجعة طلبك من قبل الإدارة.</p>
+                                    <p class="text-sm text-yellow-500 mt-4">يمكنك التواصل مع الدعم لأي استفسار</p>
+                                </div>`;
+                            
+                            document.getElementById('captainInterface').innerHTML = `
+                                <div class="bg-yellow-50 p-8 rounded-2xl border border-yellow-200 text-center">
+                                    <i class="fa fa-hourglass-half text-yellow-500 text-4xl mb-4"></i>
+                                    <p class="font-bold text-yellow-800 text-lg mb-2">حسابك قيد المراجعة</p>
+                                    <p class="text-yellow-600">سيتم تفعيل حسابك قريباً بعد مراجعة طلبك من قبل الإدارة.</p>
+                                    <p class="text-sm text-yellow-500 mt-4">يمكنك التواصل مع الدعم لأي استفسار</p>
+                                </div>`;
+                        } else {
+                            loadHomeData();
+                        }
+                    }
+                });
+
+                checkUnreadSupportMessages();
+                showPage('home');
+            }
+            
+            // إخفاء شاشة التحميل بعد فترة
+            hideSplashScreen();
+        }
+
+        // --- تشغيل التطبيق عند تحميل الصفحة ---
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
