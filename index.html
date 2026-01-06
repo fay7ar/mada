@@ -265,6 +265,52 @@
         .install-btn.hidden {
             display: none;
         }
+        
+        /* تخصيص إدخال كلمة المرور */
+        .password-input-container {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+        }
+        
+        /* تنسيق أزرار المصادقة */
+        .auth-tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .auth-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        
+        /* كلمة المرور غير صحيحة */
+        .password-error {
+            border-color: #ef4444 !important;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
     </style>
 </head>
 
@@ -326,7 +372,7 @@
 
     <!-- المحتوى الرئيسي -->
     <div class="container mx-auto p-4 max-w-2xl">
-        <!-- صفحة المصادقة -->
+        <!-- صفحة تسجيل الدخول / تسجيل جديد -->
         <section id="authPage" class="bg-white p-8 rounded-2xl shadow-xl mt-10">
             <div class="text-center mb-8">
                 <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-3xl">
@@ -336,31 +382,119 @@
                 <p class="text-gray-500">منصة ربط المشاريع مع كباتن التوصيل</p>
             </div>
             
-            <input type="text" id="userName" placeholder="الاسم الكامل" class="w-full p-4 border rounded-xl mb-4 outline-none focus:ring-2 ring-blue-500">
+            <!-- أزرار التبويب -->
+            <div class="flex mb-6 border-b">
+                <button id="loginTab" class="auth-tab flex-1 active" onclick="showAuthTab('login')">
+                    <i class="fa fa-sign-in-alt mr-2"></i> تسجيل الدخول
+                </button>
+                <button id="registerTab" class="auth-tab flex-1" onclick="showAuthTab('register')">
+                    <i class="fa fa-user-plus mr-2"></i> تسجيل جديد
+                </button>
+            </div>
             
-            <input type="tel" id="userPhone" placeholder="رقم الهاتف" class="w-full p-4 border rounded-xl mb-6 outline-none focus:ring-2 ring-blue-500">
-            
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">نوع الحساب:</label>
-                <div class="flex gap-4">
-                    <button onclick="selectRole('project')" id="roleProject" class="flex-1 py-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2">
-                        <i class="fa fa-building text-xl"></i>
-                        <span>مشروع</span>
+            <!-- نموذج تسجيل الدخول -->
+            <div id="loginForm">
+                <input type="tel" id="loginPhone" placeholder="رقم الهاتف" class="w-full p-4 border rounded-xl mb-4 outline-none focus:ring-2 ring-blue-500">
+                
+                <div class="password-input-container mb-6">
+                    <input type="password" id="loginPassword" placeholder="كلمة المرور" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-blue-500 pr-12">
+                    <button type="button" class="toggle-password" onclick="togglePassword('loginPassword')">
+                        <i class="fa fa-eye"></i>
                     </button>
-                    <button onclick="selectRole('captain')" id="roleCaptain" class="flex-1 py-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2">
-                        <i class="fa fa-user-tie text-xl"></i>
-                        <span>كابتن</span>
+                </div>
+
+                <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
+                    <i class="fa fa-sign-in-alt mr-2"></i> تسجيل الدخول
+                </button>
+
+                <div class="text-center mt-4">
+                    <button onclick="showAuthTab('register')" class="text-blue-600 text-sm hover:underline">
+                        ليس لديك حساب؟ سجل الآن
+                    </button>
+                </div>
+            </div>
+            
+            <!-- نموذج التسجيل الجديد -->
+            <div id="registerForm" class="hidden-section">
+                <input type="text" id="userName" placeholder="الاسم الكامل" class="w-full p-4 border rounded-xl mb-4 outline-none focus:ring-2 ring-blue-500">
+                
+                <input type="tel" id="userPhone" placeholder="رقم الهاتف" class="w-full p-4 border rounded-xl mb-4 outline-none focus:ring-2 ring-blue-500">
+                
+                <div class="password-input-container mb-4">
+                    <input type="password" id="userPassword" placeholder="كلمة المرور (6 أحرف على الأقل)" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-blue-500 pr-12">
+                    <button type="button" class="toggle-password" onclick="togglePassword('userPassword')">
+                        <i class="fa fa-eye"></i>
+                    </button>
+                </div>
+                
+                <div class="password-input-container mb-6">
+                    <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-blue-500 pr-12">
+                    <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">
+                        <i class="fa fa-eye"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">نوع الحساب:</label>
+                    <div class="flex gap-4">
+                        <button onclick="selectRole('project')" id="roleProject" class="flex-1 py-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2">
+                            <i class="fa fa-building text-xl"></i>
+                            <span>مشروع</span>
+                        </button>
+                        <button onclick="selectRole('captain')" id="roleCaptain" class="flex-1 py-4 rounded-xl border-2 font-bold transition-all flex flex-col items-center gap-2">
+                            <i class="fa fa-user-tie text-xl"></i>
+                            <span>كابتن</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="handleRegister()" class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-xl font-bold text-lg hover:from-green-700 hover:to-green-800 transition-all shadow-md">
+                    <i class="fa fa-user-plus mr-2"></i> إنشاء حساب
+                </button>
+
+                <div class="text-center mt-4">
+                    <button onclick="showAuthTab('login')" class="text-blue-600 text-sm hover:underline">
+                        لديك حساب بالفعل؟ سجل دخول
                     </button>
                 </div>
             </div>
 
-            <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
-                <i class="fa fa-sign-in-alt mr-2"></i> تسجيل الدخول
-            </button>
-
             <p class="text-center text-gray-500 text-sm mt-6">
                 سيتم مراجعة طلبك من قبل الإدارة قبل التفعيل
             </p>
+        </section>
+
+        <!-- صفحة إدخال كلمة المرور بعد القبول -->
+        <section id="passwordSetupPage" class="hidden-section bg-white p-8 rounded-2xl shadow-xl mt-10">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 text-3xl">
+                    <i class="fa fa-lock"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2 text-gray-800">تهانينا! تم قبول حسابك</h2>
+                <p class="text-gray-600 mb-4">يرجى تعيين كلمة مرور لتأمين حسابك</p>
+                <div class="bg-green-50 text-green-700 p-3 rounded-lg inline-block">
+                    <i class="fa fa-check-circle mr-2"></i>
+                    <span id="approvedUserName"></span>
+                </div>
+            </div>
+            
+            <div class="password-input-container mb-4">
+                <input type="password" id="setupPassword" placeholder="كلمة المرور الجديدة (6 أحرف على الأقل)" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-green-500 pr-12">
+                <button type="button" class="toggle-password" onclick="togglePassword('setupPassword')">
+                    <i class="fa fa-eye"></i>
+                </button>
+            </div>
+            
+            <div class="password-input-container mb-6">
+                <input type="password" id="setupConfirmPassword" placeholder="تأكيد كلمة المرور" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-green-500 pr-12">
+                <button type="button" class="toggle-password" onclick="togglePassword('setupConfirmPassword')">
+                    <i class="fa fa-eye"></i>
+                </button>
+            </div>
+            
+            <button onclick="setupPassword()" class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-xl font-bold text-lg hover:from-green-700 hover:to-green-800 transition-all shadow-md">
+                <i class="fa fa-save mr-2"></i> حفظ كلمة المرور
+            </button>
         </section>
 
         <!-- الصفحة الرئيسية (تختلف حسب نوع المستخدم) -->
@@ -490,6 +624,9 @@
                     <h4 class="font-bold text-gray-700 mb-2">معلومات الحساب</h4>
                     <p class="text-sm text-gray-600" id="accountType"></p>
                     <p class="text-sm text-gray-600" id="accountStatus"></p>
+                    <button onclick="changePassword()" class="mt-3 text-blue-600 text-sm hover:underline">
+                        <i class="fa fa-key mr-1"></i> تغيير كلمة المرور
+                    </button>
                 </div>
                 
                 <hr class="mb-6">
@@ -498,6 +635,46 @@
                     <i class="fa fa-sign-out-alt mr-2"></i> تسجيل الخروج
                 </button>
             </div>
+        </section>
+
+        <!-- صفحة تغيير كلمة المرور -->
+        <section id="changePasswordPage" class="hidden-section bg-white p-8 rounded-2xl shadow-xl mt-10">
+            <button onclick="showPage('profile')" class="mb-4 text-blue-600 flex items-center gap-2">
+                <i class="fa fa-arrow-right"></i> رجوع
+            </button>
+            
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 text-3xl">
+                    <i class="fa fa-key"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2 text-gray-800">تغيير كلمة المرور</h2>
+                <p class="text-gray-500">تأمين حسابك بكلمة مرور جديدة</p>
+            </div>
+            
+            <div class="password-input-container mb-4">
+                <input type="password" id="currentPassword" placeholder="كلمة المرور الحالية" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-blue-500 pr-12">
+                <button type="button" class="toggle-password" onclick="togglePassword('currentPassword')">
+                    <i class="fa fa-eye"></i>
+                </button>
+            </div>
+            
+            <div class="password-input-container mb-4">
+                <input type="password" id="newPassword" placeholder="كلمة المرور الجديدة (6 أحرف على الأقل)" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-blue-500 pr-12">
+                <button type="button" class="toggle-password" onclick="togglePassword('newPassword')">
+                    <i class="fa fa-eye"></i>
+                </button>
+            </div>
+            
+            <div class="password-input-container mb-6">
+                <input type="password" id="confirmNewPassword" placeholder="تأكيد كلمة المرور الجديدة" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-blue-500 pr-12">
+                <button type="button" class="toggle-password" onclick="togglePassword('confirmNewPassword')">
+                    <i class="fa fa-eye"></i>
+                </button>
+            </div>
+            
+            <button onclick="updatePassword()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
+                <i class="fa fa-save mr-2"></i> تحديث كلمة المرور
+            </button>
         </section>
     </div>
 
@@ -522,7 +699,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDc6BCdVWQNwk7FyBGrbWc3CoE-WSLR5Jg",
@@ -537,10 +714,42 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        let currentUser = JSON.parse(localStorage.getItem('mada_delivery_user'));
+        let currentUser = null;
         let selectedRole = '';
         let unreadSupportMessages = 0;
         let deferredPrompt = null;
+
+        // --- التحقق من حالة المستخدم المخزنة ---
+        function checkStoredUser() {
+            const storedUser = localStorage.getItem('mada_delivery_user');
+            if (storedUser) {
+                const userData = JSON.parse(storedUser);
+                // التحقق إذا كان الحساب يتطلب إدخال كلمة مرور
+                if (userData.needsPasswordSetup && userData.status === 'approved') {
+                    currentUser = userData;
+                    showPasswordSetupPage();
+                    return true;
+                }
+                // إذا كان الحساب مكتملاً
+                else if (userData.passwordSet && userData.status === 'approved') {
+                    currentUser = userData;
+                    initApp();
+                    return true;
+                }
+                // إذا كان الحساب قيد المراجعة
+                else if (userData.status === 'pending' || userData.status === 'rejected') {
+                    currentUser = userData;
+                    initApp();
+                    return true;
+                }
+                // في حالة بيانات غير صحيحة
+                else {
+                    localStorage.removeItem('mada_delivery_user');
+                    return false;
+                }
+            }
+            return false;
+        }
 
         // --- إخفاء شاشة التحميل ---
         function hideSplashScreen() {
@@ -549,29 +758,25 @@
                 splashScreen.classList.add('fade-out');
                 setTimeout(() => {
                     splashScreen.style.display = 'none';
+                    // التحقق من وجود مستخدم مخزن
+                    if (!checkStoredUser()) {
+                        showAuthTab('login');
+                    }
                 }, 500);
-            }, 1500); // عرض الشاشة لمدة 1.5 ثانية
+            }, 1500);
         }
 
         // --- التحكم في زر التثبيت ---
         window.addEventListener('beforeinstallprompt', (e) => {
-            // منع المتصفح من عرض تثبيت افتراضي
             e.preventDefault();
-            // تخزين الحدث ليتم استخدامه لاحقاً
             deferredPrompt = e;
-            // إظهار زر التثبيت المخصص
             const installButton = document.getElementById('installButton');
             installButton.classList.remove('hidden');
             
-            // إضافة حدث النقر على زر التثبيت
             installButton.addEventListener('click', () => {
-                // إخفاء الزر
                 installButton.classList.add('hidden');
-                
-                // عرض نافذة التثبيت
                 deferredPrompt.prompt();
                 
-                // الانتظار لمعرفة ما إذا قام المستخدم بالتثبيت
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
                         console.log('تم قبول التثبيت');
@@ -590,18 +795,51 @@
             installButton.classList.add('hidden');
         });
 
-        // --- التحقق مما إذا كان التطبيق يعمل في وضع PWA ---
         function isRunningAsPWA() {
             return window.matchMedia('(display-mode: standalone)').matches || 
                    window.navigator.standalone === true;
         }
 
-        // --- إخفاء زر التثبيت إذا كان التطبيق مثبتاً ---
         if (isRunningAsPWA()) {
             document.getElementById('installButton').classList.add('hidden');
         }
 
-        // --- وظائف الهوية ---
+        // --- التحكم في تبويبات المصادقة ---
+        window.showAuthTab = (tab) => {
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            
+            if (tab === 'login') {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                loginForm.classList.remove('hidden-section');
+                registerForm.classList.add('hidden-section');
+            } else {
+                loginTab.classList.remove('active');
+                registerTab.classList.add('active');
+                loginForm.classList.add('hidden-section');
+                registerForm.classList.remove('hidden-section');
+            }
+        };
+
+        // --- تبديل إظهار/إخفاء كلمة المرور ---
+        window.togglePassword = (inputId) => {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling;
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa fa-eye';
+            }
+        };
+
+        // --- اختيار نوع الحساب ---
         window.selectRole = (role) => {
             selectedRole = role;
             const projectBtn = document.getElementById('roleProject');
@@ -616,43 +854,167 @@
             }
         };
 
-        window.login = () => {
+        // --- معالجة التسجيل الجديد ---
+        window.handleRegister = () => {
             const name = document.getElementById('userName').value.trim();
             const phone = document.getElementById('userPhone').value.trim();
+            const password = document.getElementById('userPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
             
-            if (!name || !phone || !selectedRole) {
-                alert("الرجاء إدخال كافة البيانات وتحديد نوع الحساب");
+            if (!name || !phone || !password || !selectedRole) {
+                alert("الرجاء إدخال كافة البيانات");
                 return;
             }
+            
+            if (password.length < 6) {
+                alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert("كلمات المرور غير متطابقة");
+                return;
+            }
+            
+            // التحقق من عدم وجود مستخدم بنفس الرقم
+            get(ref(db, 'users/' + phone)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    alert("رقم الهاتف مسجل مسبقاً");
+                    return;
+                }
+                
+                // إنشاء كلمة مرور مشفرة (بسيطة - يمكن استخدام مكتبة تشفير)
+                const hashedPassword = btoa(password + phone); // تشفير بسيط للتوضيح
+                
+                const userData = {
+                    id: phone,
+                    name: name,
+                    phone: phone,
+                    password: hashedPassword,
+                    role: selectedRole,
+                    status: 'pending',
+                    registrationDate: Date.now(),
+                    captainStatus: selectedRole === 'captain' ? 'inactive' : null,
+                    passwordSet: true,
+                    needsPasswordSetup: false
+                };
+                
+                set(ref(db, 'users/' + phone), userData).then(() => {
+                    localStorage.setItem('mada_delivery_user', JSON.stringify(userData));
+                    currentUser = userData;
+                    
+                    alert("تم إنشاء الحساب بنجاح! سيتم مراجعته من قبل الإدارة.");
+                    location.reload();
+                });
+            });
+        };
 
-            const userData = {
-                id: phone,
-                name: name,
-                phone: phone,
-                role: selectedRole,
-                status: 'pending', // كل الحسابات تبدأ بانتظار الموافقة
-                registrationDate: Date.now(),
-                captainStatus: selectedRole === 'captain' ? 'inactive' : null
-            };
-
-            set(ref(db, 'users/' + phone), userData).then(() => {
+        // --- معالجة تسجيل الدخول ---
+        window.handleLogin = () => {
+            const phone = document.getElementById('loginPhone').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!phone || !password) {
+                alert("الرجاء إدخال رقم الهاتف وكلمة المرور");
+                return;
+            }
+            
+            get(ref(db, 'users/' + phone)).then((snapshot) => {
+                if (!snapshot.exists()) {
+                    alert("رقم الهاتف غير مسجل");
+                    return;
+                }
+                
+                const userData = snapshot.val();
+                const hashedPassword = btoa(password + phone);
+                
+                if (userData.password !== hashedPassword) {
+                    // تأثير اهتزاز على حقل كلمة المرور
+                    document.getElementById('loginPassword').classList.add('password-error');
+                    setTimeout(() => {
+                        document.getElementById('loginPassword').classList.remove('password-error');
+                    }, 500);
+                    alert("كلمة المرور غير صحيحة");
+                    return;
+                }
+                
+                // تحديث بيانات المستخدم المحلية
                 localStorage.setItem('mada_delivery_user', JSON.stringify(userData));
+                currentUser = userData;
+                
+                // إذا كان الحساب مقبولاً ولم يتم إعداد كلمة المرور
+                if (userData.status === 'approved' && userData.needsPasswordSetup) {
+                    showPasswordSetupPage();
+                } else {
+                    location.reload();
+                }
+            });
+        };
+
+        // --- إظهار صفحة إعداد كلمة المرور ---
+        function showPasswordSetupPage() {
+            document.getElementById('authPage').classList.add('hidden-section');
+            document.getElementById('passwordSetupPage').classList.remove('hidden-section');
+            document.getElementById('bottomNav').classList.add('hidden-section');
+            
+            document.getElementById('approvedUserName').textContent = currentUser.name;
+        }
+
+        // --- إعداد كلمة المرور بعد القبول ---
+        window.setupPassword = () => {
+            const password = document.getElementById('setupPassword').value;
+            const confirmPassword = document.getElementById('setupConfirmPassword').value;
+            
+            if (!password || !confirmPassword) {
+                alert("الرجاء إدخال كلمة المرور وتأكيدها");
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert("كلمات المرور غير متطابقة");
+                return;
+            }
+            
+            const hashedPassword = btoa(password + currentUser.id);
+            
+            update(ref(db, 'users/' + currentUser.id), {
+                password: hashedPassword,
+                needsPasswordSetup: false,
+                passwordSet: true
+            }).then(() => {
+                // تحديث بيانات المستخدم المحلية
+                currentUser.password = hashedPassword;
+                currentUser.needsPasswordSetup = false;
+                currentUser.passwordSet = true;
+                localStorage.setItem('mada_delivery_user', JSON.stringify(currentUser));
+                
+                alert("تم تعيين كلمة المرور بنجاح!");
                 location.reload();
             });
         };
 
+        // --- تسجيل الخروج ---
         window.logout = () => {
-            localStorage.removeItem('mada_delivery_user');
-            location.reload();
+            if (confirm('هل تريد تسجيل الخروج؟')) {
+                localStorage.removeItem('mada_delivery_user');
+                location.reload();
+            }
         };
 
         // --- التنقل بين الصفحات ---
         window.showPage = (page) => {
-            ['homePage', 'supportPage', 'profilePage'].forEach(s => {
+            ['homePage', 'supportPage', 'profilePage', 'changePasswordPage'].forEach(s => {
                 document.getElementById(s)?.classList.add('hidden-section');
             });
             
-            document.getElementById(page + 'Page').classList.remove('hidden-section');
+            if (page === 'home' || page === 'support' || page === 'profile') {
+                document.getElementById(page + 'Page').classList.remove('hidden-section');
+            }
             
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             const navBtn = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
@@ -666,6 +1028,54 @@
                 unreadSupportMessages = 0;
                 updateSupportBadge();
             }
+        };
+
+        // --- تغيير كلمة المرور ---
+        window.changePassword = () => {
+            document.getElementById('profilePage').classList.add('hidden-section');
+            document.getElementById('changePasswordPage').classList.remove('hidden-section');
+        };
+
+        window.updatePassword = () => {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            
+            if (!currentPassword || !newPassword || !confirmNewPassword) {
+                alert("الرجاء إدخال جميع الحقول");
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل");
+                return;
+            }
+            
+            if (newPassword !== confirmNewPassword) {
+                alert("كلمات المرور الجديدة غير متطابقة");
+                return;
+            }
+            
+            // التحقق من كلمة المرور الحالية
+            const hashedCurrentPassword = btoa(currentPassword + currentUser.id);
+            
+            if (hashedCurrentPassword !== currentUser.password) {
+                alert("كلمة المرور الحالية غير صحيحة");
+                return;
+            }
+            
+            const hashedNewPassword = btoa(newPassword + currentUser.id);
+            
+            update(ref(db, 'users/' + currentUser.id), {
+                password: hashedNewPassword
+            }).then(() => {
+                // تحديث بيانات المستخدم المحلية
+                currentUser.password = hashedNewPassword;
+                localStorage.setItem('mada_delivery_user', JSON.stringify(currentUser));
+                
+                alert("تم تغيير كلمة المرور بنجاح!");
+                showPage('profile');
+            });
         };
 
         function updateStatusUI(userData) {
@@ -1020,7 +1430,6 @@
                 return;
             }
 
-            // تحويل الرسائل إلى مصفوفة وترتيبها حسب الوقت
             const messagesArray = [];
             for (let id in messages) {
                 messagesArray.push({ id, ...messages[id] });
@@ -1108,10 +1517,12 @@
         function initApp() {
             if (currentUser) {
                 document.getElementById('authPage').classList.add('hidden-section');
+                document.getElementById('passwordSetupPage').classList.add('hidden-section');
                 document.getElementById('bottomNav').classList.remove('hidden-section');
                 document.getElementById('profileName').innerText = currentUser.name;
                 document.getElementById('profilePhone').innerText = currentUser.phone;
 
+                // مراقبة تحديثات بيانات المستخدم
                 onValue(ref(db, 'users/' + currentUser.id), (snapshot) => {
                     const userData = snapshot.val();
                     if (userData) {
@@ -1119,8 +1530,12 @@
                         localStorage.setItem('mada_delivery_user', JSON.stringify(userData));
                         updateStatusUI(userData);
                         
+                        if (userData.status === 'approved' && userData.needsPasswordSetup) {
+                            showPasswordSetupPage();
+                            return;
+                        }
+                        
                         if (userData.status !== 'approved') {
-                            // إذا كان الحساب غير مفعل، إظهار رسالة
                             document.getElementById('projectInterface').innerHTML = `
                                 <div class="bg-yellow-50 p-8 rounded-2xl border border-yellow-200 text-center">
                                     <i class="fa fa-hourglass-half text-yellow-500 text-4xl mb-4"></i>
@@ -1146,12 +1561,16 @@
                 showPage('home');
             }
             
-            // إخفاء شاشة التحميل بعد فترة
             hideSplashScreen();
         }
 
         // --- تشغيل التطبيق عند تحميل الصفحة ---
-        document.addEventListener('DOMContentLoaded', initApp);
+        document.addEventListener('DOMContentLoaded', () => {
+            // التحقق من وجود مستخدم مخزن أولاً
+            if (!checkStoredUser()) {
+                hideSplashScreen();
+            }
+        });
     </script>
 </body>
 </html>
