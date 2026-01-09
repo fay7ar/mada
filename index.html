@@ -251,7 +251,7 @@
             cursor: pointer;
             z-index: 999;
             display: flex;
-            align-items-center: center;
+            align-items: center;
             gap: 8px;
             transition: all 0.3s;
             animation: fadeInUp 0.5s ease-out;
@@ -310,28 +310,6 @@
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
-        }
-        
-        /* تحسينات للواجهة */
-        .page-transition {
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* حاوية الصفحات الرئيسية */
-        .main-pages-container {
-            position: relative;
-            min-height: 400px;
         }
     </style>
 </head>
@@ -393,7 +371,7 @@
     </header>
 
     <!-- المحتوى الرئيسي -->
-    <div class="container mx-auto p-4 max-w-2xl main-pages-container">
+    <div class="container mx-auto p-4 max-w-2xl">
         <!-- صفحة تسجيل الدخول / تسجيل جديد -->
         <section id="authPage" class="bg-white p-8 rounded-2xl shadow-xl mt-10">
             <div class="text-center mb-8">
@@ -661,7 +639,7 @@
 
         <!-- صفحة تغيير كلمة المرور -->
         <section id="changePasswordPage" class="hidden-section bg-white p-8 rounded-2xl shadow-xl mt-10">
-            <button onclick="goBackToProfile()" class="mb-4 text-blue-600 flex items-center gap-2">
+            <button onclick="showPage('profile')" class="mb-4 text-blue-600 flex items-center gap-2">
                 <i class="fa fa-arrow-right"></i> رجوع
             </button>
             
@@ -689,31 +667,31 @@
             
             <div class="password-input-container mb-6">
                 <input type="password" id="confirmNewPassword" placeholder="تأكيد كلمة المرور الجديدة" class="w-full p-4 border rounded-xl outline-none focus:ring-2 ring-blue-500 pr-12">
-                <button type="button" class="toggle-password" onclick="togglePassword('confirmNewPassword')">
-                    <i class="fa fa-eye"></i>
+                    <button type="button" class="toggle-password" onclick="togglePassword('confirmNewPassword')">
+                        <i class="fa fa-eye"></i>
+                    </button>
+                </div>
+                
+                <button onclick="updatePassword()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
+                    <i class="fa fa-save mr-2"></i> تحديث كلمة المرور
                 </button>
-            </div>
-            
-            <button onclick="updatePassword()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md">
-                <i class="fa fa-save mr-2"></i> تحديث كلمة المرور
-            </button>
-        </section>
-    </div>
+            </section>
+        </div>
 
     <!-- شريط التنقل السفلي -->
     <nav id="bottomNav" class="hidden-section fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 z-50 shadow-[0_-4px_15px_rgba(0,0,0,0.1)]">
-        <button onclick="showMainPage('home')" id="navHome" class="nav-item flex flex-col items-center text-gray-400 pt-1">
+        <button onclick="showPage('home')" id="navHome" class="nav-item flex flex-col items-center text-gray-400 pt-1">
             <i class="fa fa-home text-xl"></i>
             <span class="text-xs mt-1">الرئيسية</span>
         </button>
         
-        <button onclick="showMainPage('support')" id="navSupport" class="nav-item flex flex-col items-center text-gray-400 pt-1 relative">
+        <button onclick="showPage('support')" id="navSupport" class="nav-item flex flex-col items-center text-gray-400 pt-1 relative">
             <i class="fa fa-headset text-xl"></i>
             <span class="text-xs mt-1">الدعم</span>
             <span id="supportBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">!</span>
         </button>
         
-        <button onclick="showMainPage('profile')" id="navProfile" class="nav-item flex flex-col items-center text-gray-400 pt-1">
+        <button onclick="showPage('profile')" id="navProfile" class="nav-item flex flex-col items-center text-gray-400 pt-1">
             <i class="fa fa-user text-xl"></i>
             <span class="text-xs mt-1">حسابي</span>
         </button>
@@ -740,7 +718,12 @@
         let selectedRole = '';
         let unreadSupportMessages = 0;
         let deferredPrompt = null;
-        let currentPage = 'home'; // تتبع الصفحة الحالية
+        let currentPage = ''; // متغير لتتبع الصفحة الحالية
+        let homeDataLoaded = false; // لتتبع إذا تم تحميل بيانات الرئيسية
+        let supportDataLoaded = false; // لتتبع إذا تم تحميل بيانات الدعم
+        let projectOrdersListener = null; // مراقب طلبات المشروع
+        let availableOrdersListener = null; // مراقب الطلبات المتاحة
+        let acceptedOrdersListener = null; // مراقب الطلبات المقبولة
 
         // --- التحقق من حالة المستخدم المخزنة ---
         function checkStoredUser() {
@@ -1024,36 +1007,35 @@
         // --- تسجيل الخروج ---
         window.logout = () => {
             if (confirm('هل تريد تسجيل الخروج؟')) {
+                // إزالة جميع المستمعين للبيانات
+                if (projectOrdersListener) {
+                    projectOrdersListener();
+                }
+                if (availableOrdersListener) {
+                    availableOrdersListener();
+                }
+                if (acceptedOrdersListener) {
+                    acceptedOrdersListener();
+                }
+                
                 localStorage.removeItem('mada_delivery_user');
                 location.reload();
             }
         };
 
-        // --- التنقل بين الصفحات الرئيسية (المشكلة الأصلية هنا) ---
-        window.showMainPage = (page) => {
-            // تحديث الصفحة الحالية
-            currentPage = page;
+        // --- التنقل بين الصفحات ---
+        window.showPage = (page) => {
+            // إذا كانت الصفحة المطلوبة هي نفس الصفحة الحالية، لا تفعل شيئًا
+            if (currentPage === page) return;
             
-            // إخفاء جميع الصفحات الرئيسية فقط (وليس جميع الصفحات)
-            const mainPages = ['homePage', 'supportPage', 'profilePage'];
-            
-            mainPages.forEach(pageId => {
-                const pageElement = document.getElementById(pageId);
-                if (pageElement) {
-                    pageElement.classList.add('hidden-section');
-                }
+            // إخفاء جميع الصفحات
+            ['homePage', 'supportPage', 'profilePage', 'changePasswordPage'].forEach(s => {
+                document.getElementById(s)?.classList.add('hidden-section');
             });
             
             // إظهار الصفحة المطلوبة
-            const targetPage = document.getElementById(page + 'Page');
-            if (targetPage) {
-                targetPage.classList.remove('hidden-section');
-                targetPage.classList.add('page-transition');
-                
-                // إزالة تأثير التحويل بعد انتهائه
-                setTimeout(() => {
-                    targetPage.classList.remove('page-transition');
-                }, 300);
+            if (page === 'home' || page === 'support' || page === 'profile') {
+                document.getElementById(page + 'Page').classList.remove('hidden-section');
             }
             
             // تحديث أزرار التنقل
@@ -1061,63 +1043,34 @@
             const navBtn = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
             if (navBtn) navBtn.classList.add('active');
             
-            // تحميل البيانات الخاصة بكل صفحة
+            // تحديث الصفحة الحالية
+            currentPage = page;
+            
+            // تحميل البيانات حسب الصفحة
             if (page === 'home') {
-                loadHomeData();
+                if (!homeDataLoaded) {
+                    loadHomeData();
+                }
             }
             if (page === 'support') {
-                loadSupportChat();
+                if (!supportDataLoaded) {
+                    loadSupportChat();
+                } else {
+                    // إذا كانت المحادثة محملة بالفعل، فقط قم بالتمرير إلى الأسفل
+                    const container = document.getElementById('supportMessages');
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                }
                 unreadSupportMessages = 0;
                 updateSupportBadge();
             }
         };
 
-        // --- دالة showPage السابقة (للتوافق) ---
-        window.showPage = (page) => {
-            // إذا كانت الصفحة من الصفحات الرئيسية، استخدم showMainPage
-            if (['home', 'support', 'profile'].includes(page)) {
-                showMainPage(page);
-                return;
-            }
-            
-            // إذا كانت صفحة تغيير كلمة المرور
-            if (page === 'changePassword') {
-                // إخفاء الصفحات الرئيسية أولاً
-                ['homePage', 'supportPage', 'profilePage'].forEach(pageId => {
-                    const pageElement = document.getElementById(pageId);
-                    if (pageElement) {
-                        pageElement.classList.add('hidden-section');
-                    }
-                });
-                
-                // إظهار صفحة تغيير كلمة المرور
-                document.getElementById('changePasswordPage').classList.remove('hidden-section');
-            }
-        };
-
-        // --- العودة من صفحة تغيير كلمة المرور ---
-        window.goBackToProfile = () => {
-            // إخفاء صفحة تغيير كلمة المرور
-            document.getElementById('changePasswordPage').classList.add('hidden-section');
-            
-            // إظهار صفحة الملف الشخصي
-            showMainPage('profile');
-        };
-
         // --- تغيير كلمة المرور ---
         window.changePassword = () => {
-            // حفظ الصفحة الحالية
-            const previousPage = currentPage;
-            
-            // إخفاء الصفحات الرئيسية
-            ['homePage', 'supportPage', 'profilePage'].forEach(pageId => {
-                const pageElement = document.getElementById(pageId);
-                if (pageElement) {
-                    pageElement.classList.add('hidden-section');
-                }
-            });
-            
-            // إظهار صفحة تغيير كلمة المرور
+            currentPage = 'changePassword';
+            document.getElementById('profilePage').classList.add('hidden-section');
             document.getElementById('changePasswordPage').classList.remove('hidden-section');
         };
 
@@ -1159,7 +1112,7 @@
                 localStorage.setItem('mada_delivery_user', JSON.stringify(currentUser));
                 
                 alert("تم تغيير كلمة المرور بنجاح!");
-                showMainPage('profile');
+                showPage('profile');
             });
         };
 
@@ -1243,7 +1196,6 @@
             push(ref(db, 'orders'), orderData).then(() => {
                 alert('تم إرسال الطلب بنجاح! سيتم تعيين كابتن قريباً.');
                 clearOrderForm();
-                loadProjectOrders();
             });
         };
 
@@ -1260,7 +1212,12 @@
             const ordersContainer = document.getElementById('projectOrders');
             ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-4">جاري تحميل الطلبات...</p>';
 
-            onValue(ref(db, 'orders'), (snapshot) => {
+            // إزالة المستمع القديم إذا كان موجودًا
+            if (projectOrdersListener) {
+                projectOrdersListener();
+            }
+
+            projectOrdersListener = onValue(ref(db, 'orders'), (snapshot) => {
                 const orders = snapshot.val();
                 ordersContainer.innerHTML = '';
                 
@@ -1368,7 +1325,12 @@
             const ordersContainer = document.getElementById('availableOrders');
             ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-4">جاري تحميل الطلبات المتاحة...</p>';
 
-            onValue(ref(db, 'orders'), (snapshot) => {
+            // إزالة المستمع القديم إذا كان موجودًا
+            if (availableOrdersListener) {
+                availableOrdersListener();
+            }
+
+            availableOrdersListener = onValue(ref(db, 'orders'), (snapshot) => {
                 const orders = snapshot.val();
                 ordersContainer.innerHTML = '';
                 
@@ -1420,8 +1382,6 @@
                 assignedAt: Date.now()
             }).then(() => {
                 alert('تم قبول الطلب بنجاح!');
-                loadAvailableOrders();
-                loadAcceptedOrders();
             });
         };
 
@@ -1429,7 +1389,12 @@
             const ordersContainer = document.getElementById('acceptedOrders');
             ordersContainer.innerHTML = '<p class="text-center text-gray-400 py-4">جاري تحميل الطلبات المكلف بها...</p>';
 
-            onValue(ref(db, 'orders'), (snapshot) => {
+            // إزالة المستمع القديم إذا كان موجودًا
+            if (acceptedOrdersListener) {
+                acceptedOrdersListener();
+            }
+
+            acceptedOrdersListener = onValue(ref(db, 'orders'), (snapshot) => {
                 const orders = snapshot.val();
                 ordersContainer.innerHTML = '';
                 
@@ -1480,7 +1445,6 @@
                     completedAt: Date.now()
                 }).then(() => {
                     alert('تم تسجيل إتمام الطلب بنجاح!');
-                    loadAcceptedOrders();
                 });
             }
         };
@@ -1496,6 +1460,7 @@
             onValue(chatRef, (snapshot) => {
                 const messages = snapshot.val();
                 renderSupportMessages(messages);
+                supportDataLoaded = true;
             });
 
             update(ref(db, `supportChats/${supportChatId}/metadata`), {
@@ -1590,11 +1555,13 @@
                 document.getElementById('projectInterface').classList.remove('hidden-section');
                 document.getElementById('captainInterface').classList.add('hidden-section');
                 loadProjectOrders();
+                homeDataLoaded = true;
             } else if (currentUser.role === 'captain') {
                 document.getElementById('projectInterface').classList.add('hidden-section');
                 document.getElementById('captainInterface').classList.remove('hidden-section');
                 loadAvailableOrders();
                 loadAcceptedOrders();
+                homeDataLoaded = true;
             }
         }
 
@@ -1637,14 +1604,20 @@
                                     <p class="text-sm text-yellow-500 mt-4">يمكنك التواصل مع الدعم لأي استفسار</p>
                                 </div>`;
                         } else {
-                            loadHomeData();
+                            if (currentPage === 'home' || !currentPage) {
+                                loadHomeData();
+                            }
                         }
                     }
                 });
 
                 checkUnreadSupportMessages();
-                // عرض الصفحة الحالية المخزنة (الرئيسية افتراضياً)
-                showMainPage(currentPage);
+                
+                if (!currentPage) {
+                    showPage('home');
+                } else {
+                    showPage(currentPage);
+                }
             }
             
             hideSplashScreen();
