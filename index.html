@@ -251,7 +251,7 @@
             cursor: pointer;
             z-index: 999;
             display: flex;
-            align-items: center;
+            align-items-center: center;
             gap: 8px;
             transition: all 0.3s;
             animation: fadeInUp 0.5s ease-out;
@@ -310,6 +310,28 @@
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
+        }
+        
+        /* تحسينات للواجهة */
+        .page-transition {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* حاوية الصفحات الرئيسية */
+        .main-pages-container {
+            position: relative;
+            min-height: 400px;
         }
     </style>
 </head>
@@ -371,7 +393,7 @@
     </header>
 
     <!-- المحتوى الرئيسي -->
-    <div class="container mx-auto p-4 max-w-2xl">
+    <div class="container mx-auto p-4 max-w-2xl main-pages-container">
         <!-- صفحة تسجيل الدخول / تسجيل جديد -->
         <section id="authPage" class="bg-white p-8 rounded-2xl shadow-xl mt-10">
             <div class="text-center mb-8">
@@ -639,7 +661,7 @@
 
         <!-- صفحة تغيير كلمة المرور -->
         <section id="changePasswordPage" class="hidden-section bg-white p-8 rounded-2xl shadow-xl mt-10">
-            <button onclick="showPage('profile')" class="mb-4 text-blue-600 flex items-center gap-2">
+            <button onclick="goBackToProfile()" class="mb-4 text-blue-600 flex items-center gap-2">
                 <i class="fa fa-arrow-right"></i> رجوع
             </button>
             
@@ -680,18 +702,18 @@
 
     <!-- شريط التنقل السفلي -->
     <nav id="bottomNav" class="hidden-section fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 z-50 shadow-[0_-4px_15px_rgba(0,0,0,0.1)]">
-        <button onclick="showPage('home')" id="navHome" class="nav-item flex flex-col items-center text-gray-400 pt-1">
+        <button onclick="showMainPage('home')" id="navHome" class="nav-item flex flex-col items-center text-gray-400 pt-1">
             <i class="fa fa-home text-xl"></i>
             <span class="text-xs mt-1">الرئيسية</span>
         </button>
         
-        <button onclick="showPage('support')" id="navSupport" class="nav-item flex flex-col items-center text-gray-400 pt-1 relative">
+        <button onclick="showMainPage('support')" id="navSupport" class="nav-item flex flex-col items-center text-gray-400 pt-1 relative">
             <i class="fa fa-headset text-xl"></i>
             <span class="text-xs mt-1">الدعم</span>
             <span id="supportBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">!</span>
         </button>
         
-        <button onclick="showPage('profile')" id="navProfile" class="nav-item flex flex-col items-center text-gray-400 pt-1">
+        <button onclick="showMainPage('profile')" id="navProfile" class="nav-item flex flex-col items-center text-gray-400 pt-1">
             <i class="fa fa-user text-xl"></i>
             <span class="text-xs mt-1">حسابي</span>
         </button>
@@ -718,6 +740,7 @@
         let selectedRole = '';
         let unreadSupportMessages = 0;
         let deferredPrompt = null;
+        let currentPage = 'home'; // تتبع الصفحة الحالية
 
         // --- التحقق من حالة المستخدم المخزنة ---
         function checkStoredUser() {
@@ -1006,20 +1029,39 @@
             }
         };
 
-        // --- التنقل بين الصفحات ---
-        window.showPage = (page) => {
-            ['homePage', 'supportPage', 'profilePage', 'changePasswordPage'].forEach(s => {
-                document.getElementById(s)?.classList.add('hidden-section');
+        // --- التنقل بين الصفحات الرئيسية (المشكلة الأصلية هنا) ---
+        window.showMainPage = (page) => {
+            // تحديث الصفحة الحالية
+            currentPage = page;
+            
+            // إخفاء جميع الصفحات الرئيسية فقط (وليس جميع الصفحات)
+            const mainPages = ['homePage', 'supportPage', 'profilePage'];
+            
+            mainPages.forEach(pageId => {
+                const pageElement = document.getElementById(pageId);
+                if (pageElement) {
+                    pageElement.classList.add('hidden-section');
+                }
             });
             
-            if (page === 'home' || page === 'support' || page === 'profile') {
-                document.getElementById(page + 'Page').classList.remove('hidden-section');
+            // إظهار الصفحة المطلوبة
+            const targetPage = document.getElementById(page + 'Page');
+            if (targetPage) {
+                targetPage.classList.remove('hidden-section');
+                targetPage.classList.add('page-transition');
+                
+                // إزالة تأثير التحويل بعد انتهائه
+                setTimeout(() => {
+                    targetPage.classList.remove('page-transition');
+                }, 300);
             }
             
+            // تحديث أزرار التنقل
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             const navBtn = document.getElementById('nav' + page.charAt(0).toUpperCase() + page.slice(1));
             if (navBtn) navBtn.classList.add('active');
             
+            // تحميل البيانات الخاصة بكل صفحة
             if (page === 'home') {
                 loadHomeData();
             }
@@ -1030,9 +1072,52 @@
             }
         };
 
+        // --- دالة showPage السابقة (للتوافق) ---
+        window.showPage = (page) => {
+            // إذا كانت الصفحة من الصفحات الرئيسية، استخدم showMainPage
+            if (['home', 'support', 'profile'].includes(page)) {
+                showMainPage(page);
+                return;
+            }
+            
+            // إذا كانت صفحة تغيير كلمة المرور
+            if (page === 'changePassword') {
+                // إخفاء الصفحات الرئيسية أولاً
+                ['homePage', 'supportPage', 'profilePage'].forEach(pageId => {
+                    const pageElement = document.getElementById(pageId);
+                    if (pageElement) {
+                        pageElement.classList.add('hidden-section');
+                    }
+                });
+                
+                // إظهار صفحة تغيير كلمة المرور
+                document.getElementById('changePasswordPage').classList.remove('hidden-section');
+            }
+        };
+
+        // --- العودة من صفحة تغيير كلمة المرور ---
+        window.goBackToProfile = () => {
+            // إخفاء صفحة تغيير كلمة المرور
+            document.getElementById('changePasswordPage').classList.add('hidden-section');
+            
+            // إظهار صفحة الملف الشخصي
+            showMainPage('profile');
+        };
+
         // --- تغيير كلمة المرور ---
         window.changePassword = () => {
-            document.getElementById('profilePage').classList.add('hidden-section');
+            // حفظ الصفحة الحالية
+            const previousPage = currentPage;
+            
+            // إخفاء الصفحات الرئيسية
+            ['homePage', 'supportPage', 'profilePage'].forEach(pageId => {
+                const pageElement = document.getElementById(pageId);
+                if (pageElement) {
+                    pageElement.classList.add('hidden-section');
+                }
+            });
+            
+            // إظهار صفحة تغيير كلمة المرور
             document.getElementById('changePasswordPage').classList.remove('hidden-section');
         };
 
@@ -1074,7 +1159,7 @@
                 localStorage.setItem('mada_delivery_user', JSON.stringify(currentUser));
                 
                 alert("تم تغيير كلمة المرور بنجاح!");
-                showPage('profile');
+                showMainPage('profile');
             });
         };
 
@@ -1558,7 +1643,8 @@
                 });
 
                 checkUnreadSupportMessages();
-                showPage('home');
+                // عرض الصفحة الحالية المخزنة (الرئيسية افتراضياً)
+                showMainPage(currentPage);
             }
             
             hideSplashScreen();
